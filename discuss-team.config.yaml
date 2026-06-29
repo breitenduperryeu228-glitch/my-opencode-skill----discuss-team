@@ -1,0 +1,222 @@
+# discuss-team v2.0 配置文件
+# ============================================================================
+# 所有字段都有注释，用户可放心修改。系统会在启动时根据 mode 自动应用默认值。
+# 必填字段含 enum 验证提示，错误配置会被立即拒绝。
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# 讨论模式（v2.0 新增）
+# ----------------------------------------------------------------------------
+# mode: 决定讨论深度与 arxiv 策略
+#   - "standard": 快速决策，one-pager 输出，4-6 轮，0-2 篇 arxiv 摘要，不下载 PDF
+#   - "full":     深入论证，完整 plan + TODO，8-12 轮，3-5 篇 arxiv 含 PDF
+# 首次启动时会交互式询问用户（用户输入 "skip" 时使用此默认值）
+mode: full  # enum: standard | full
+
+# ----------------------------------------------------------------------------
+# 讨论流程配置
+# ----------------------------------------------------------------------------
+discussion:
+  # 最大轮次，超过则提示用户
+  # - standard 模式推荐: 6
+  # - full 模式推荐: 10
+  max_rounds: 10
+
+  # 每 N 轮重读 persona 卡（防 drift）
+  persona_refresh_interval: 3
+
+  # 是否自动展开 Phase 1 独立思考
+  auto_independent_thinking: true
+
+  # 是否显示轮次计数（调试用）
+  show_round_counter: true
+
+# ----------------------------------------------------------------------------
+# Quality Gate（v2.0 新增）
+# ----------------------------------------------------------------------------
+quality_gate:
+  # 是否启用质量门禁（每 Phase 结束自动检查 3 项）
+  enabled: true
+
+  # Gate 连续失败多少次触发超时协议
+  max_failures: 3
+
+  # 检查项（必须全部启用才能确保产出质量）
+  checks:
+    hmw_problem: true         # HMW 问题清晰度
+    independent_evidence: true # ≥ 2 个独立论据
+    verifiable_todo: true     # TODO 含可执行命令
+
+# ----------------------------------------------------------------------------
+# 用户插话配置
+# ----------------------------------------------------------------------------
+intervention:
+  # 是否允许自然语言插话
+  natural_language_enabled: true
+
+  # 自然语言触发关键词（任一匹配即触发暂停 + 逐条引用回应）
+  natural_language_triggers:
+    - "等等"
+    - "等一下"
+    - "我有不同看法"
+    - "我有异议"
+    - "我有意见"
+    - "暂停"
+    - "停止"
+    - "插一句"
+    - "打断一下"
+    - "其实"
+
+  # 是否强制 AI 逐条引用用户意见
+  require_quote_response: true
+
+  # slash 命令支持
+  slash_commands:
+    - "/discuss-team pause"     # 暂停讨论
+    - "/discuss-team resume"    # 恢复讨论
+    - "/discuss-team intervene" # 用户插话
+    - "/discuss-team status"    # 查看当前状态
+    - "/discuss-team force-end" # 强制收敛
+
+# ----------------------------------------------------------------------------
+# arxiv 检索配置（大师兄专用）
+# ----------------------------------------------------------------------------
+arxiv:
+  # 是否启用 arxiv 检索
+  enabled: true
+
+  # 每次搜索最大结果数
+  # - standard 模式推荐: 2（仅摘要）
+  # - full 模式推荐: 5（含 PDF 下载）
+  max_results: 3
+
+  # 论文下载目录（相对 plan 文件所在目录）
+  download_dir: "参考文献"
+
+  # arxiv API 基础 URL（v2.0.1 修复：强制 HTTPS）
+  # 历史: arxiv 已于 2025-11-11 完成 HTTP→HTTPS 迁移（参考官方公告）
+  # 旧配置 "http://export.arxiv.org" 返回 301 永久重定向
+  # 必须使用 HTTPS，否则 curl/webfetch 调用失败
+  api_base: "https://export.arxiv.org/api/query"
+
+  # 是否跟随 HTTP 3xx 重定向（v2.0.1 新增）
+  # curl 加 -L，webfetch 显式启用 follow_redirects: true
+  # 防止未来 arxiv 再换 URL 时静默失败
+  follow_redirects: true
+
+  # paper_id 是否去除版本号后缀（v2.0.1 新增）
+  # arxiv API 返回的 paper_id 形如 "2605.19362v3"
+  # 下载 URL 必须使用 "2605.19362"（无 v3 后缀）
+  # 启用后自动用 sed 's/v[0-9]*$//' 处理
+  paper_id_strip_version: true
+
+  # PDF 直链模板
+  pdf_url_template: "https://arxiv.org/pdf/{paper_id}.pdf"
+
+  # 请求间隔（秒，避免限流）
+  request_interval_seconds: 3
+
+  # 超时（秒）
+  timeout_seconds: 30
+
+  # 重试策略（v2.0.1 新增）
+  # - "fixed":          固定间隔重试
+  # - "exponential":    指数退避（1s, 2s, 4s, 8s...）
+  retry_strategy: "exponential"
+
+  # 最大重试次数
+  max_retries: 3
+
+  # API 健康检查（v2.0.1 新增）
+  # 每次讨论启动前 PING 一次，验证 arxiv 可达性
+  health_check:
+    enabled: true
+    timeout_seconds: 5
+    fail_threshold: 3
+
+  # 失败时降级策略（v2.0 升级为三协议）
+  # - "three_protocol": 推荐 - 实时 → legacy → 放弃
+  # - "use_legacy":     仅用知识截止内论文
+  # - "ask_user":       询问用户
+  failure_strategy: "three_protocol"
+
+  # standard 模式是否下载 PDF
+  download_pdfs_in_standard: false
+
+  # full 模式是否下载 PDF
+  download_pdfs_in_full: true
+
+  # 搜索排序方式
+  # - "relevance":        相关性
+  # - "submittedDate":    提交日期
+  # - "lastUpdatedDate":  最后更新日期
+  sort_by: "relevance"
+
+# ----------------------------------------------------------------------------
+# 角色启用配置
+# ----------------------------------------------------------------------------
+roles:
+  classmate:
+    enabled: true
+    emoji: "🌱"
+    name: "同学"
+  expert:
+    enabled: true
+    emoji: "🎓"
+    name: "专家"
+  top_student:
+    enabled: true
+    emoji: "🧠"
+    name: "学霸"
+  grand_senior:
+    enabled: true
+    emoji: "📚"
+    name: "大师兄"
+
+# ----------------------------------------------------------------------------
+# 输出配置
+# ----------------------------------------------------------------------------
+output:
+  # plan 文件存放目录
+  plans_dir: ".sisyphus/plans"
+
+  # 文件名模板
+  # 可用变量: {date}, {slug}, {index}
+  filename_template: "discuss-{date}-{slug}.md"
+
+  # 命名长度限制（slug 最大字符数）
+  max_slug_length: 30
+
+  # 是否包含 TODO 清单（Prometheus 兼容）
+  include_todo_section: true
+
+  # TODO 是否强制含可执行命令（v2.0 新增硬约束）
+  require_executable_verification: true
+
+  # 是否包含完整讨论记录
+  include_discussion_log: true
+
+  # 是否包含参考文献章节
+  include_references_section: true
+
+  # standard 模式输出 one-pager 模板
+  one_pager_template: |
+    # {title} — 精炼结果
+    ## 核心问题（How Might We）
+    ## 推荐方向
+    ## 关键假设（必须验证）
+    ## MVP 范围（做/不做）
+    ## 风险
+
+# ----------------------------------------------------------------------------
+# 调试配置
+# ----------------------------------------------------------------------------
+debug:
+  # 是否输出详细日志
+  verbose: false
+
+  # 是否保存每轮中间状态
+  save_intermediate_state: false
+
+  # 日志级别: "debug" | "info" | "warn" | "error"
+  log_level: "info"
