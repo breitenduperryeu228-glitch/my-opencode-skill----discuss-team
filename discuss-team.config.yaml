@@ -1,0 +1,127 @@
+# discuss-team 配置文件
+# 所有字段都可以根据需要调整，无需重启 skill
+
+# 讨论流程配置
+discussion:
+  # 最大轮次，超过则提示用户（用户可选择继续或强行收敛）
+  max_rounds: 10
+
+  # 每 N 轮重读一次 persona 卡片（防止 persona drift）
+  persona_refresh_interval: 3
+
+  # 讨论启动时是否自动展开阶段 1 独立思考
+  auto_independent_thinking: true
+
+  # 是否在每轮发言时显示"轮次计数"（调试用）
+  show_round_counter: true
+
+# 用户插话配置
+intervention:
+  # 是否允许自然语言插话
+  natural_language_enabled: true
+
+  # 自然语言触发关键词（任一匹配即触发）
+  natural_language_triggers:
+    - "等等"
+    - "等一下"
+    - "我有不同看法"
+    - "我有异议"
+    - "我有意见"
+    - "暂停"
+    - "停止"
+    - "插一句"
+    - "打断一下"
+    - "其实"
+
+  # slash 命令支持
+  slash_commands:
+    - "/discuss-team pause"     # 暂停讨论
+    - "/discuss-team resume"    # 恢复讨论
+    - "/discuss-team intervene" # 用户插话
+    - "/discuss-team status"    # 查看当前状态
+    - "/discuss-team force-end" # 强制收敛
+
+# arxiv 检索配置（大师兄专用）
+arxiv:
+  # 是否启用 arxiv 检索
+  enabled: true
+
+  # 每次搜索最大结果数（避免下载太多论文）
+  max_results: 3
+
+  # 论文下载目录（相对于项目根目录）
+  download_dir: "参考文献"
+
+  # arxiv API 基础 URL
+  api_base: "http://export.arxiv.org/api/query"
+
+  # PDF 直链模板
+  pdf_url_template: "https://arxiv.org/pdf/{paper_id}.pdf"
+
+  # 请求间隔（秒，避免被限流）
+  request_interval_seconds: 3
+
+  # 超时（秒）
+  timeout_seconds: 30
+
+  # 失败时降级策略
+  # - "use_legacy": 用知识截止内的论文（标注"未实时验证"）
+  # - "ask_user": 询问用户是否手动提供
+  failure_strategy: "use_legacy"
+
+  # 搜索排序方式
+  # - "relevance": 相关性
+  # - "submittedDate": 提交日期
+  # - "lastUpdatedDate": 最后更新日期
+  sort_by: "relevance"
+
+# 角色启用配置（可临时禁用某个角色）
+roles:
+  classmate:
+    enabled: true
+    emoji: "🌱"
+    name: "同学"
+  expert:
+    enabled: true
+    emoji: "🎓"
+    name: "专家"
+  top_student:
+    enabled: true
+    emoji: "🧠"
+    name: "学霸"
+  grand_senior:
+    enabled: true
+    emoji: "📚"
+    name: "大师兄"
+
+# 输出配置
+output:
+  # plan 文件存放目录
+  plans_dir: ".sisyphus/plans"
+
+  # 文件名模板
+  # 可用变量: {date}, {slug}, {index}
+  filename_template: "discuss-{date}-{slug}.md"
+
+  # 命名长度限制（slug 最大字符数）
+  max_slug_length: 30
+
+  # 是否在 plan 顶部包含 TODO 清单（兼容 Prometheus）
+  include_todo_section: true
+
+  # 是否在 plan 底部包含完整讨论记录
+  include_discussion_log: true
+
+  # 是否包含参考文献章节
+  include_references_section: true
+
+# 调试配置
+debug:
+  # 是否输出详细日志
+  verbose: false
+
+  # 是否在 plan 文件中保存每一轮的中间状态
+  save_intermediate_state: false
+
+  # 日志级别: "debug" | "info" | "warn" | "error"
+  log_level: "info"

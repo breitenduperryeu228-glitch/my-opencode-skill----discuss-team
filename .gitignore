@@ -1,0 +1,55 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+venv/
+.venv/
+env/
+
+# Node (in case anyone adds JS tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+logs/
+
+# Local env
+.env
+.env.local
+
+# OS-generated plan artifacts (do NOT commit per-user plans)
+.sisyphus/plans/*.md
+.sisyphus/plans/参考文献/*.pdf
+
+# But DO keep the example plan in examples/
+!.sisyphus/plans/examples/
+
+# Temp
+tmp/
+temp/
+*.tmp
